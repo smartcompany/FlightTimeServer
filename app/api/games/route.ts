@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import sudokuGame from "../../games/sudoku.json";
 import tetrisGame from "../../games/tetris.json";
 import game2048 from "../../games/game2048.json";
-import webviewExample from "../../games/webview_example.json";
 
 interface GameMetadata {
   id: string;
@@ -27,7 +26,6 @@ export async function GET() {
       sudokuGame,
       tetrisGame,
       game2048,
-      webviewExample,
     ] as GameMetadata[];
 
     const games = allGames.map((gameData) => {
