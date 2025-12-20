@@ -215,6 +215,18 @@
             return Math.min(blockSizeByHeight, blockSizeByWidth, 30);
         }
         
+        // 게임 상태 변수 선언 (함수 정의 전에 선언)
+        let board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
+        let currentPiece = null;
+        let nextPiece = null;
+        let score = 0;
+        let level = 1;
+        let lines = 0;
+        let gameRunning = false;
+        let gamePaused = false;
+        let gameInterval = null;
+        let lastDropTime = 0;
+        
         function resizeCanvas() {
             BLOCK_SIZE = calculateBlockSize();
             canvas.width = COLS * BLOCK_SIZE;
@@ -240,18 +252,6 @@
         window.addEventListener('resize', () => {
             resizeCanvas();
         });
-        
-        let board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
-        let currentPiece = null;
-        let nextPiece = null;
-        let score = 0;
-        let level = 1;
-        let lines = 0;
-        let gameRunning = false;
-        let gamePaused = false;
-        let dropTime = 0;
-        let lastTime = 0;
-        let gameInterval = null;
         
         const PIECES = [
             [[1,1,1,1]], // I
@@ -352,8 +352,6 @@
             );
             if (isValidMove(currentPiece, 0, 0, rotated)) {
                 currentPiece.shape = rotated;
-                drawBoard();
-                drawNext();
             }
         }
         
@@ -369,6 +367,9 @@
             clearLines();
             currentPiece = nextPiece;
             nextPiece = createPiece();
+            
+            drawBoard();
+            drawNext();
             
             if (!isValidMove(currentPiece)) {
                 gameOver();
@@ -392,7 +393,7 @@
                 const newLevel = Math.floor(lines / 10) + 1;
                 if (newLevel !== level) {
                     level = newLevel;
-                    startGameLoop(); // 레벨이 올라가면 속도 조정
+                    updateGameLoop(); // 레벨이 올라가면 속도 조정
                 }
                 updateUI();
             }
@@ -402,25 +403,23 @@
             if (currentPiece && isValidMove(currentPiece, dx, dy)) {
                 currentPiece.x += dx;
                 currentPiece.y += dy;
-                drawBoard();
-                drawNext();
                 return true;
             }
             return false;
         }
         
         function drop() {
+            if (!currentPiece || !gameRunning || gamePaused) return;
             if (!movePiece(0, 1)) {
                 placePiece();
             }
+            drawBoard();
+            drawNext();
         }
         
         function gameLoop() {
-            if (!gameRunning || gamePaused) return;
-            
+            if (!gameRunning || gamePaused || !currentPiece) return;
             drop();
-            drawBoard();
-            drawNext();
         }
         
         function startGameLoop() {
@@ -433,6 +432,13 @@
             }, dropInterval);
         }
         
+        function updateGameLoop() {
+            if (gameInterval) {
+                clearInterval(gameInterval);
+                startGameLoop();
+            }
+        }
+        
         function updateUI() {
             document.getElementById('score').textContent = score;
             document.getElementById('level').textContent = level;
@@ -440,6 +446,10 @@
         }
         
         function startGame() {
+            if (gameInterval) {
+                clearInterval(gameInterval);
+                gameInterval = null;
+            }
             board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
             score = 0;
             level = 1;
@@ -448,6 +458,7 @@
             gamePaused = false;
             currentPiece = createPiece();
             nextPiece = createPiece();
+            lastDropTime = Date.now();
             document.getElementById('gameOver').classList.remove('show');
             updateUI();
             drawBoard();
@@ -480,11 +491,19 @@
         }
         
         function moveLeft() {
-            if (gameRunning && !gamePaused) movePiece(-1, 0);
+            if (gameRunning && !gamePaused && currentPiece) {
+                movePiece(-1, 0);
+                drawBoard();
+                drawNext();
+            }
         }
         
         function moveRight() {
-            if (gameRunning && !gamePaused) movePiece(1, 0);
+            if (gameRunning && !gamePaused && currentPiece) {
+                movePiece(1, 0);
+                drawBoard();
+                drawNext();
+            }
         }
         
         function moveDown() {
@@ -492,7 +511,11 @@
         }
         
         function rotate() {
-            if (gameRunning && !gamePaused) rotatePiece();
+            if (gameRunning && !gamePaused && currentPiece) {
+                rotatePiece();
+                drawBoard();
+                drawNext();
+            }
         }
         
         function hardDrop() {
