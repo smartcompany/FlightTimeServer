@@ -1,9 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-// @ts-ignore
 import sudokuGame from '../../../games/sudoku.json';
-// @ts-ignore
 import tetrisGame from '../../../games/tetris.json';
-// @ts-ignore
 import game2048 from '../../../games/game2048.json';
 
 const gamesMap: Record<string, any> = {

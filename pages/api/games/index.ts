@@ -1,9 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-// @ts-ignore
 import sudokuGame from '../../games/sudoku.json';
-// @ts-ignore
 import tetrisGame from '../../games/tetris.json';
-// @ts-ignore
 import game2048 from '../../games/game2048.json';
 
 interface GameMetadata {
@@ -37,14 +34,13 @@ export default async function handler(
       game2048,
     ] as GameMetadata[];
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://flight-time-server.vercel.app';
-    
+    // 로컬 개발 환경에서는 localhost 사용
     const games = allGames.map((gameData) => {
       const gameId = gameData.id;
       
       return {
         ...gameData,
-        downloadUrl: `${baseUrl}/api/games/${gameId}/download`,
+        downloadUrl: `/api/games/${gameId}/download`,
         fileSize: gameData.dartCode ? Buffer.byteLength(gameData.dartCode, 'utf8') : 0,
         gameType: gameData.gameType || 'unknown',
       };

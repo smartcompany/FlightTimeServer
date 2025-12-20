@@ -33,11 +33,10 @@ export default async function handler(
       return res.status(404).json({ error: 'Game not found' });
     }
 
-    // 다운로드 URL 추가
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://flight-time-server.vercel.app';
+    // 다운로드 URL 추가 (상대 경로)
     const gameWithUrl = {
       ...gameData,
-      downloadUrl: `${baseUrl}/api/games/${gameId}/download`,
+      downloadUrl: `/api/games/${gameId}/download`,
     };
 
     res.status(200).json(gameWithUrl);
