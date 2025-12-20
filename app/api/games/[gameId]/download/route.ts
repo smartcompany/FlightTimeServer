@@ -1,12 +1,21 @@
 import { NextResponse } from "next/server";
-import sudokuGame from "../../../../games/sudoku.json";
-import tetrisGame from "../../../../games/tetris.json";
-import game2048 from "../../../../games/game2048.json";
 
 const gamesMap: Record<string, any> = {
-  sudoku: sudokuGame,
-  tetris: tetrisGame,
-  game2048: game2048,
+  sudoku: {
+    id: "sudoku",
+    gameType: "webview",
+    config: {},
+  },
+  tetris: {
+    id: "tetris",
+    gameType: "webview",
+    config: {},
+  },
+  game2048: {
+    id: "game2048",
+    gameType: "webview",
+    config: {},
+  },
 };
 
 export async function GET(
