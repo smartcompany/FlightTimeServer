@@ -251,6 +251,7 @@
         let gamePaused = false;
         let dropTime = 0;
         let lastTime = 0;
+        let gameInterval = null;
         
         const PIECES = [
             [[1,1,1,1]], // I
@@ -351,6 +352,8 @@
             );
             if (isValidMove(currentPiece, 0, 0, rotated)) {
                 currentPiece.shape = rotated;
+                drawBoard();
+                drawNext();
             }
         }
         
@@ -386,7 +389,11 @@
             if (linesCleared > 0) {
                 lines += linesCleared;
                 score += linesCleared * 100 * level;
-                level = Math.floor(lines / 10) + 1;
+                const newLevel = Math.floor(lines / 10) + 1;
+                if (newLevel !== level) {
+                    level = newLevel;
+                    startGameLoop(); // 레벨이 올라가면 속도 조정
+                }
                 updateUI();
             }
         }
@@ -395,6 +402,8 @@
             if (currentPiece && isValidMove(currentPiece, dx, dy)) {
                 currentPiece.x += dx;
                 currentPiece.y += dy;
+                drawBoard();
+                drawNext();
                 return true;
             }
             return false;
@@ -406,22 +415,22 @@
             }
         }
         
-        function update(time = 0) {
+        function gameLoop() {
             if (!gameRunning || gamePaused) return;
             
-            const deltaTime = time - lastTime;
-            lastTime = time;
-            dropTime += deltaTime;
-            
-            const dropInterval = Math.max(100, 1000 - (level - 1) * 50);
-            if (dropTime > dropInterval) {
-                drop();
-                dropTime = 0;
-            }
-            
+            drop();
             drawBoard();
             drawNext();
-            requestAnimationFrame(update);
+        }
+        
+        function startGameLoop() {
+            if (gameInterval) clearInterval(gameInterval);
+            const dropInterval = Math.max(100, 1000 - (level - 1) * 50);
+            gameInterval = setInterval(() => {
+                if (gameRunning && !gamePaused) {
+                    gameLoop();
+                }
+            }, dropInterval);
         }
         
         function updateUI() {
@@ -441,12 +450,17 @@
             nextPiece = createPiece();
             document.getElementById('gameOver').classList.remove('show');
             updateUI();
-            lastTime = performance.now();
-            update();
+            drawBoard();
+            drawNext();
+            startGameLoop();
         }
         
         function gameOver() {
             gameRunning = false;
+            if (gameInterval) {
+                clearInterval(gameInterval);
+                gameInterval = null;
+            }
             document.getElementById('finalScore').textContent = score;
             document.getElementById('gameOver').classList.add('show');
         }
@@ -454,9 +468,13 @@
         function pauseGame() {
             if (gameRunning) {
                 gamePaused = !gamePaused;
-                if (!gamePaused) {
-                    lastTime = performance.now();
-                    update();
+                if (gamePaused) {
+                    if (gameInterval) {
+                        clearInterval(gameInterval);
+                        gameInterval = null;
+                    }
+                } else {
+                    startGameLoop();
                 }
             }
         }
