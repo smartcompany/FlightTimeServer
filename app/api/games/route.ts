@@ -1,7 +1,7 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import sudokuGame from '../../games/sudoku.json';
-import tetrisGame from '../../games/tetris.json';
-import game2048 from '../../games/game2048.json';
+import { NextResponse } from "next/server";
+import sudokuGame from "../../games/sudoku.json";
+import tetrisGame from "../../games/tetris.json";
+import game2048 from "../../games/game2048.json";
 
 interface GameMetadata {
   id: string;
@@ -19,14 +19,7 @@ interface GameMetadata {
   dartCode?: string;
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<GameMetadata[] | { error: string }>
-) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+export async function GET() {
   try {
     const allGames = [
       sudokuGame,
@@ -34,7 +27,6 @@ export default async function handler(
       game2048,
     ] as GameMetadata[];
 
-    // 로컬 개발 환경에서는 localhost 사용
     const games = allGames.map((gameData) => {
       const gameId = gameData.id;
       
@@ -46,10 +38,17 @@ export default async function handler(
       };
     });
 
-    res.status(200).json(games);
+    return NextResponse.json(games, {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
   } catch (error) {
     console.error('Error reading games:', error);
-    res.status(500).json({ error: 'Failed to read games' });
+    return NextResponse.json(
+      { error: 'Failed to read games' },
+      { status: 500 }
+    );
   }
 }
 
