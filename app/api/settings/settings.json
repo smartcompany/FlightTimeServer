@@ -1,11 +1,11 @@
 {
-  "ios_ad": "rewarded_ad",
-  "android_ad": "rewarded_ad",
+  "ios_ad": "rewarded_test",
+  "android_ad": "rewarded_test",
   "ios_ads": [
-      {"rewarded_ad": 1}
+      {"rewarded_test": 1}
   ],
   "android_ads": [
-      {"rewarded_ad": 1}
+      {"rewarded_test": 1}
   ],
   "ref": {
       "ios": {
