@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import sudokuGame from "../../games/sudoku.json";
 import tetrisGame from "../../games/tetris.json";
 import game2048 from "../../games/game2048.json";
+import webviewExample from "../../games/webview_example.json";
 
 interface GameMetadata {
   id: string;
@@ -9,13 +10,14 @@ interface GameMetadata {
   description: string;
   version: string;
   iconUrl: string;
-  downloadUrl: string;
+  downloadUrl?: string;
   fileSize: number;
   isBuiltIn: boolean;
   categories: string[];
   lastUpdated?: string;
   gameType?: string;
   config?: any;
+  htmlUrl?: string;
   dartCode?: string;
 }
 
@@ -25,6 +27,7 @@ export async function GET() {
       sudokuGame,
       tetrisGame,
       game2048,
+      webviewExample,
     ] as GameMetadata[];
 
     const games = allGames.map((gameData) => {
@@ -33,7 +36,7 @@ export async function GET() {
       return {
         ...gameData,
         downloadUrl: `/api/games/${gameId}/download`,
-        fileSize: gameData.dartCode ? Buffer.byteLength(gameData.dartCode, 'utf8') : 0,
+        fileSize: 0, // 메타데이터만 다운로드하므로 파일 크기는 0
         gameType: gameData.gameType || 'unknown',
       };
     });
