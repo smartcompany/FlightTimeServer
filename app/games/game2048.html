@@ -18,10 +18,15 @@
             align-items: center;
             padding: 20px;
             min-height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+            -webkit-overflow-scrolling: none;
         }
         .container {
             max-width: 500px;
             width: 100%;
+            overflow: hidden;
+            touch-action: none;
         }
         h1 {
             color: #776e65;
@@ -307,7 +312,60 @@
             updateDisplay();
         }
 
-        // 키보드 이벤트
+        // 터치 제스처 감지
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        const minSwipeDistance = 30;
+
+        document.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            touchEndX = e.changedTouches[0].clientX;
+            touchEndY = e.changedTouches[0].clientY;
+            handleSwipe();
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        function handleSwipe() {
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            const absX = Math.abs(deltaX);
+            const absY = Math.abs(deltaY);
+
+            // 최소 거리 이상 움직였는지 확인
+            if (absX < minSwipeDistance && absY < minSwipeDistance) {
+                return;
+            }
+
+            // 더 큰 방향으로 이동
+            if (absX > absY) {
+                // 수평 스와이프
+                if (deltaX > 0) {
+                    move('right');
+                } else {
+                    move('left');
+                }
+            } else {
+                // 수직 스와이프
+                if (deltaY > 0) {
+                    move('down');
+                } else {
+                    move('up');
+                }
+            }
+        }
+
+        // 키보드 이벤트 (데스크톱용)
         document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowUp') move('up');
             else if (e.key === 'ArrowDown') move('down');
