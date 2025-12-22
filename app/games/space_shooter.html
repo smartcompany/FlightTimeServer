@@ -253,9 +253,56 @@
         let isDragging = false;
         let activeTouchId = null;
         let isShooting = false;
+        let shootInterval = null;
+        
+        function handleTouchMove(e) {
+            if (!isDragging || !gameRunning || activeTouchId === null) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const touch = Array.from(e.touches).find(t => t.identifier === activeTouchId);
+            if (!touch) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const touchX = touch.clientX - rect.left;
+            player.x = Math.max(player.width / 2, Math.min(canvas.width - player.width / 2, touchX));
+            
+            // 연속 발사
+            if (!isShooting) {
+                isShooting = true;
+                shootInterval = setInterval(() => {
+                    if (!isDragging || !gameRunning) {
+                        if (shootInterval) {
+                            clearInterval(shootInterval);
+                            shootInterval = null;
+                        }
+                        isShooting = false;
+                        return;
+                    }
+                    shoot();
+                }, 200);
+            }
+        }
+        
+        function handleTouchEnd(e) {
+            if (activeTouchId === null) return;
+            
+            const touch = Array.from(e.changedTouches).find(t => t.identifier === activeTouchId);
+            if (touch) {
+                isDragging = false;
+                activeTouchId = null;
+                if (shootInterval) {
+                    clearInterval(shootInterval);
+                    shootInterval = null;
+                }
+                isShooting = false;
+            }
+        }
         
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             if (!gameRunning) {
                 resetGame();
                 return;
@@ -270,53 +317,15 @@
             }
         }, { passive: false });
         
-        // document에 touchmove를 추가하여 canvas 밖으로 나가도 추적
-        document.addEventListener('touchmove', (e) => {
-            if (!isDragging || !gameRunning || activeTouchId === null) return;
-            
-            const touch = Array.from(e.touches).find(t => t.identifier === activeTouchId);
-            if (!touch) return;
-            
-            e.preventDefault();
-            const rect = canvas.getBoundingClientRect();
-            const touchX = touch.clientX - rect.left;
-            player.x = Math.max(player.width / 2, Math.min(canvas.width - player.width / 2, touchX));
-            
-            // 연속 발사
-            if (!isShooting) {
-                isShooting = true;
-                const shootInterval = setInterval(() => {
-                    if (!isDragging || !gameRunning) {
-                        clearInterval(shootInterval);
-                        isShooting = false;
-                        return;
-                    }
-                    shoot();
-                }, 200);
-            }
-        }, { passive: false });
+        // canvas와 document 모두에 touchmove 등록
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        document.addEventListener('touchmove', handleTouchMove, { passive: false });
         
-        document.addEventListener('touchend', (e) => {
-            if (activeTouchId !== null) {
-                const touch = Array.from(e.changedTouches).find(t => t.identifier === activeTouchId);
-                if (touch) {
-                    isDragging = false;
-                    activeTouchId = null;
-                    isShooting = false;
-                }
-            }
-        }, { passive: false });
+        canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+        document.addEventListener('touchend', handleTouchEnd, { passive: false });
         
-        document.addEventListener('touchcancel', (e) => {
-            if (activeTouchId !== null) {
-                const touch = Array.from(e.changedTouches).find(t => t.identifier === activeTouchId);
-                if (touch) {
-                    isDragging = false;
-                    activeTouchId = null;
-                    isShooting = false;
-                }
-            }
-        }, { passive: false });
+        canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+        document.addEventListener('touchcancel', handleTouchEnd, { passive: false });
         
         canvas.addEventListener('click', () => {
             if (!gameRunning) {
