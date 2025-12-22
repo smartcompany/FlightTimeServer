@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match 3</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            min-height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .score-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 10px;
+            justify-content: center;
+        }
+        .score-box {
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        #gameCanvas {
+            border: 3px solid #333;
+            border-radius: 10px;
+            background: #fff;
+            display: block;
+            margin: 0 auto;
+            touch-action: none;
+        }
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+        }
+        .game-over.show {
+            display: block;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .hint {
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Match 3</h1>
+        <div class="score-container">
+            <div class="score-box">
+                <div>Score: <span id="score">0</span></div>
+            </div>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div class="game-over" id="gameOver">
+            <h2>Game Over!</h2>
+            <p>Score: <span id="finalScore">0</span></p>
+            <button onclick="resetGame()">Play Again</button>
+        </div>
+        <div class="hint">Tap to swap gems</div>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            const maxWidth = Math.min(400, window.innerWidth - 40);
+            canvas.width = maxWidth;
+            canvas.height = maxWidth;
+        }
+        resizeCanvas();
+        
+        const gridSize = 8;
+        const cellSize = canvas.width / gridSize;
+        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F'];
+        let grid = [];
+        let selected = null;
+        let score = 0;
+        let gameRunning = true;
+        
+        function initGrid() {
+            grid = [];
+            for (let row = 0; row < gridSize; row++) {
+                grid[row] = [];
+                for (let col = 0; col < gridSize; col++) {
+                    grid[row][col] = Math.floor(Math.random() * colors.length);
+                }
+            }
+            removeMatches();
+        }
+        
+        function draw() {
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            for (let row = 0; row < gridSize; row++) {
+                for (let col = 0; col < gridSize; col++) {
+                    const x = col * cellSize;
+                    const y = row * cellSize;
+                    
+                    if (selected && selected.row === row && selected.col === col) {
+                        ctx.strokeStyle = '#000';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(x, y, cellSize, cellSize);
+                    }
+                    
+                    ctx.fillStyle = colors[grid[row][col]];
+                    ctx.fillRect(x + 2, y + 2, cellSize - 4, cellSize - 4);
+                }
+            }
+        }
+        
+        function getCellFromPos(x, y) {
+            const col = Math.floor(x / cellSize);
+            const row = Math.floor(y / cellSize);
+            return { row, col };
+        }
+        
+        function findMatches() {
+            const matches = [];
+            
+            // Horizontal matches
+            for (let row = 0; row < gridSize; row++) {
+                let count = 1;
+                let color = grid[row][0];
+                for (let col = 1; col < gridSize; col++) {
+                    if (grid[row][col] === color) {
+                        count++;
+                    } else {
+                        if (count >= 3) {
+                            for (let i = col - count; i < col; i++) {
+                                matches.push({ row, col: i });
+                            }
+                        }
+                        count = 1;
+                        color = grid[row][col];
+                    }
+                }
+                if (count >= 3) {
+                    for (let i = gridSize - count; i < gridSize; i++) {
+                        matches.push({ row, col: i });
+                    }
+                }
+            }
+            
+            // Vertical matches
+            for (let col = 0; col < gridSize; col++) {
+                let count = 1;
+                let color = grid[0][col];
+                for (let row = 1; row < gridSize; row++) {
+                    if (grid[row][col] === color) {
+                        count++;
+                    } else {
+                        if (count >= 3) {
+                            for (let i = row - count; i < row; i++) {
+                                matches.push({ row: i, col });
+                            }
+                        }
+                        count = 1;
+                        color = grid[row][col];
+                    }
+                }
+                if (count >= 3) {
+                    for (let i = gridSize - count; i < gridSize; i++) {
+                        matches.push({ row: i, col });
+                    }
+                }
+            }
+            
+            return matches;
+        }
+        
+        function removeMatches() {
+            const matches = findMatches();
+            if (matches.length === 0) return;
+            
+            matches.forEach(match => {
+                grid[match.row][match.col] = -1;
+            });
+            
+            score += matches.length * 10;
+            document.getElementById('score').textContent = score;
+            
+            // Drop gems
+            for (let col = 0; col < gridSize; col++) {
+                let writePos = gridSize - 1;
+                for (let row = gridSize - 1; row >= 0; row--) {
+                    if (grid[row][col] !== -1) {
+                        grid[writePos][col] = grid[row][col];
+                        if (writePos !== row) {
+                            grid[row][col] = -1;
+                        }
+                        writePos--;
+                    }
+                }
+                // Fill empty spaces
+                for (let row = writePos; row >= 0; row--) {
+                    grid[row][col] = Math.floor(Math.random() * colors.length);
+                }
+            }
+            
+            setTimeout(() => {
+                removeMatches();
+            }, 300);
+        }
+        
+        function swapCells(row1, col1, row2, col2) {
+            const temp = grid[row1][col1];
+            grid[row1][col1] = grid[row2][col2];
+            grid[row2][col2] = temp;
+            
+            const matches = findMatches();
+            if (matches.length === 0) {
+                // Swap back
+                const temp = grid[row1][col1];
+                grid[row1][col1] = grid[row2][col2];
+                grid[row2][col2] = temp;
+            } else {
+                removeMatches();
+            }
+        }
+        
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const x = e.touches[0].clientX - rect.left;
+            const y = e.touches[0].clientY - rect.top;
+            const cell = getCellFromPos(x, y);
+            
+            if (selected) {
+                if (Math.abs(cell.row - selected.row) + Math.abs(cell.col - selected.col) === 1) {
+                    swapCells(selected.row, selected.col, cell.row, cell.col);
+                }
+                selected = null;
+            } else {
+                selected = cell;
+            }
+            draw();
+        }, { passive: false });
+        
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const cell = getCellFromPos(x, y);
+            
+            if (selected) {
+                if (Math.abs(cell.row - selected.row) + Math.abs(cell.col - selected.col) === 1) {
+                    swapCells(selected.row, selected.col, cell.row, cell.col);
+                }
+                selected = null;
+            } else {
+                selected = cell;
+            }
+            draw();
+        });
+        
+        function resetGame() {
+            score = 0;
+            document.getElementById('score').textContent = score;
+            document.getElementById('gameOver').classList.remove('show');
+            selected = null;
+            initGrid();
+            draw();
+        }
+        
+        initGrid();
+        draw();
+    </script>
+</body>
+</html>
+

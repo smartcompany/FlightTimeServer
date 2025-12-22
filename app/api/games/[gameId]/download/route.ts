@@ -1,8 +1,43 @@
 import { NextResponse } from "next/server";
 
 const gamesMap: Record<string, any> = {
-  sudoku: {
-    id: "sudoku",
+  airplane: {
+    id: "airplane",
+    gameType: "webview",
+    config: {},
+  },
+  snake: {
+    id: "snake",
+    gameType: "webview",
+    config: {},
+  },
+  breakout: {
+    id: "breakout",
+    gameType: "webview",
+    config: {},
+  },
+  flappy: {
+    id: "flappy",
+    gameType: "webview",
+    config: {},
+  },
+  space_shooter: {
+    id: "space_shooter",
+    gameType: "webview",
+    config: {},
+  },
+  match3: {
+    id: "match3",
+    gameType: "webview",
+    config: {},
+  },
+  runner: {
+    id: "runner",
+    gameType: "webview",
+    config: {},
+  },
+  puzzle: {
+    id: "puzzle",
     gameType: "webview",
     config: {},
   },
