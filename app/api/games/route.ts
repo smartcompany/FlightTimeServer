@@ -33,18 +33,18 @@ const games: GameMetadata[] = [
     htmlUrl: "/api/games/airplane/game.html"
   },
   {
-    id: "snake",
-    name: "Snake Game",
-    description: "Classic snake game",
+    id: "asteroids",
+    name: "Asteroids",
+    description: "Classic space shooter",
     version: "1.0.0",
-    iconUrl: "https://example.com/icons/snake.png",
+    iconUrl: "https://example.com/icons/asteroids.png",
     fileSize: 0,
     isBuiltIn: false,
-    categories: ["액션", "클래식"],
+    categories: ["액션", "슈팅", "클래식"],
     lastUpdated: "2024-01-15T00:00:00Z",
     gameType: "webview",
     config: {},
-    htmlUrl: "/api/games/snake/game.html"
+    htmlUrl: "/api/games/asteroids/game.html"
   },
   {
     id: "breakout",

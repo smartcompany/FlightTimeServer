@@ -6,8 +6,8 @@ const gamesMap: Record<string, any> = {
     gameType: "webview",
     config: {},
   },
-  snake: {
-    id: "snake",
+  asteroids: {
+    id: "asteroids",
     gameType: "webview",
     config: {},
   },

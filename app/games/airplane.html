@@ -183,6 +183,7 @@
             airplane.y = canvas.height - 80;
             obstacleSpeed = 2;
             obstacleSpawnRate = 0.02;
+            document.getElementById('score').textContent = score;
             document.getElementById('gameOver').classList.remove('show');
             gameLoop();
         }
@@ -296,25 +297,56 @@
             setTimeout(gameLoop, 16);
         }
         
-        // 터치 이벤트
+        // 터치 이벤트 - 드래그 추적
+        let isDragging = false;
+        let activeTouchId = null;
+        
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            touchStartX = e.touches[0].clientX;
+            if (!gameRunning) {
+                init();
+                return;
+            }
+            if (e.touches.length > 0) {
+                isDragging = true;
+                activeTouchId = e.touches[0].identifier;
+                const rect = canvas.getBoundingClientRect();
+                const touchX = e.touches[0].clientX - rect.left;
+                airplane.x = Math.max(20, Math.min(canvas.width - 20, touchX - airplane.width / 2));
+            }
         }, { passive: false });
         
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (!gameRunning) return;
+        // document에 touchmove를 추가하여 canvas 밖으로 나가도 추적
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging || !gameRunning || activeTouchId === null) return;
             
-            const touchX = e.touches[0].clientX;
+            const touch = Array.from(e.touches).find(t => t.identifier === activeTouchId);
+            if (!touch) return;
+            
+            e.preventDefault();
             const rect = canvas.getBoundingClientRect();
-            const canvasX = touchX - rect.left;
-            
-            airplane.x = Math.max(20, Math.min(canvas.width - 20, canvasX - airplane.width / 2));
+            const touchX = touch.clientX - rect.left;
+            airplane.x = Math.max(20, Math.min(canvas.width - 20, touchX - airplane.width / 2));
         }, { passive: false });
         
-        canvas.addEventListener('touchend', (e) => {
-            e.preventDefault();
+        document.addEventListener('touchend', (e) => {
+            if (activeTouchId !== null) {
+                const touch = Array.from(e.changedTouches).find(t => t.identifier === activeTouchId);
+                if (touch) {
+                    isDragging = false;
+                    activeTouchId = null;
+                }
+            }
+        }, { passive: false });
+        
+        document.addEventListener('touchcancel', (e) => {
+            if (activeTouchId !== null) {
+                const touch = Array.from(e.changedTouches).find(t => t.identifier === activeTouchId);
+                if (touch) {
+                    isDragging = false;
+                    activeTouchId = null;
+                }
+            }
         }, { passive: false });
         
         // 키보드 이벤트 (데스크톱용)
@@ -330,7 +362,16 @@
         
         // 게임 시작
         function resetGame() {
-            init();
+            document.getElementById('gameOver').classList.remove('show');
+            obstacles = [];
+            score = 0;
+            document.getElementById('score').textContent = score;
+            airplane.x = canvas.width / 2;
+            airplane.y = canvas.height - 80;
+            obstacleSpeed = 2;
+            obstacleSpawnRate = 0.02;
+            gameRunning = true;
+            gameLoop();
         }
         
         // 초기 화면
@@ -339,17 +380,18 @@
         ctx.textAlign = 'center';
         ctx.fillText('Tap to Start', canvas.width / 2, canvas.height / 2);
         
-        canvas.addEventListener('touchstart', () => {
+        canvas.addEventListener('click', (e) => {
             if (!gameRunning) {
-                init();
+                const rect = canvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+                // 게임 오버 다이얼로그 영역이 아닌 경우에만 시작
+                const gameOverEl = document.getElementById('gameOver');
+                if (!gameOverEl.classList.contains('show')) {
+                    init();
+                }
             }
-        }, { once: true });
-        
-        canvas.addEventListener('click', () => {
-            if (!gameRunning) {
-                init();
-            }
-        }, { once: true });
+        });
     </script>
 </body>
 </html>
