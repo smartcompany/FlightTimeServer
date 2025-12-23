@@ -157,6 +157,34 @@ const games: GameMetadata[] = [
     gameType: "webview",
     config: {},
     htmlUrl: "/api/games/game2048/game.html"
+  },
+  {
+    id: "solitaire",
+    name: "Solitaire",
+    description: "Classic card game",
+    version: "1.0.0",
+    iconUrl: "https://example.com/icons/solitaire.png",
+    fileSize: 0,
+    isBuiltIn: false,
+    categories: ["카드", "클래식"],
+    lastUpdated: "2024-01-15T00:00:00Z",
+    gameType: "webview",
+    config: {},
+    htmlUrl: "/api/games/solitaire/game.html"
+  },
+  {
+    id: "tower_defense",
+    name: "Tower Defense",
+    description: "Build towers to defend against enemies",
+    version: "1.0.0",
+    iconUrl: "https://example.com/icons/tower_defense.png",
+    fileSize: 0,
+    isBuiltIn: false,
+    categories: ["전략", "타워 디펜스"],
+    lastUpdated: "2024-01-15T00:00:00Z",
+    gameType: "webview",
+    config: {},
+    htmlUrl: "/api/games/tower_defense/game.html"
   }
 ];
 

@@ -51,6 +51,16 @@ const gamesMap: Record<string, any> = {
     gameType: "webview",
     config: {},
   },
+  solitaire: {
+    id: "solitaire",
+    gameType: "webview",
+    config: {},
+  },
+  tower_defense: {
+    id: "tower_defense",
+    gameType: "webview",
+    config: {},
+  },
 };
 
 export async function GET(
