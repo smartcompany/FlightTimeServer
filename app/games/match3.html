@@ -106,11 +106,34 @@
         const ctx = canvas.getContext('2d');
         
         function resizeCanvas() {
-            const maxWidth = Math.min(400, window.innerWidth - 40);
-            canvas.width = maxWidth;
-            canvas.height = maxWidth;
+            const h1 = document.querySelector('h1');
+            const scoreContainer = document.querySelector('.score-container');
+            const hint = document.querySelector('.hint');
+            
+            const headerHeight = h1 ? h1.offsetHeight : 30;
+            const scoreHeight = scoreContainer ? scoreContainer.offsetHeight : 50;
+            const hintHeight = hint ? hint.offsetHeight : 30;
+            const padding = 20;
+            
+            const availableHeight = window.innerHeight - headerHeight - scoreHeight - hintHeight - padding;
+            const availableWidth = window.innerWidth - 20;
+            
+            // 정사각형 캔버스
+            const size = Math.min(availableWidth, availableHeight);
+            
+            canvas.width = Math.max(200, Math.floor(size));
+            canvas.height = Math.max(200, Math.floor(size));
+            
+            canvas.style.width = canvas.width + 'px';
+            canvas.style.height = canvas.height + 'px';
+            
+            // 그리드 재계산
+            if (gridSize) {
+                cellSize = canvas.width / gridSize;
+            }
         }
         resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
         
         const gridSize = 8;
         const cellSize = canvas.width / gridSize;

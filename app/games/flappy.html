@@ -110,11 +110,40 @@
         const ctx = canvas.getContext('2d');
         
         function resizeCanvas() {
-            const maxWidth = Math.min(400, window.innerWidth - 40);
-            canvas.width = maxWidth;
-            canvas.height = 600;
+            const h1 = document.querySelector('h1');
+            const scoreContainer = document.querySelector('.score-container');
+            const hint = document.querySelector('.hint');
+            
+            const headerHeight = h1 ? h1.offsetHeight : 30;
+            const scoreHeight = scoreContainer ? scoreContainer.offsetHeight : 50;
+            const hintHeight = hint ? hint.offsetHeight : 30;
+            const padding = 20;
+            
+            const availableHeight = window.innerHeight - headerHeight - scoreHeight - hintHeight - padding;
+            const availableWidth = window.innerWidth - 20;
+            
+            const aspectRatio = 2 / 3;
+            let canvasWidth = availableWidth;
+            let canvasHeight = canvasWidth / aspectRatio;
+            
+            if (canvasHeight > availableHeight) {
+                canvasHeight = availableHeight;
+                canvasWidth = canvasHeight * aspectRatio;
+            }
+            
+            canvas.width = Math.max(200, Math.floor(canvasWidth));
+            canvas.height = Math.max(300, Math.floor(canvasHeight));
+            
+            canvas.style.width = canvas.width + 'px';
+            canvas.style.height = canvas.height + 'px';
+            
+            if (bird) {
+                bird.x = 50;
+                bird.y = canvas.height / 2;
+            }
         }
         resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
         
         const bird = {
             x: 50,

@@ -16,28 +16,35 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
+            padding: 10px;
+            margin: 0;
             min-height: 100vh;
+            max-height: 100vh;
             overflow: hidden;
             touch-action: none;
             -webkit-overflow-scrolling: none;
         }
         .container {
-            max-width: 500px;
             width: 100%;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: flex-start;
+            box-sizing: border-box;
         }
         h1 {
             color: #fff;
-            margin-bottom: 10px;
+            margin: 5px 0;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            font-size: clamp(16px, 4vw, 24px);
+            flex-shrink: 0;
         }
         .score-container {
             display: flex;
-            gap: 20px;
-            margin-bottom: 10px;
+            gap: 10px;
+            margin: 5px 0;
+            flex-shrink: 0;
         }
         .score-box {
             background: rgba(255, 255, 255, 0.9);
@@ -57,11 +64,16 @@
             color: #333;
         }
         #gameCanvas {
-            border: 3px solid #fff;
+            border: 2px solid #fff;
             border-radius: 10px;
             background: #87CEEB;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             touch-action: none;
+            flex: 1;
+            max-width: 100%;
+            max-height: 100%;
+            width: 100%;
+            height: auto;
         }
         .game-over {
             position: absolute;
@@ -106,9 +118,10 @@
         }
         .hint {
             color: #fff;
-            font-size: 14px;
-            margin-top: 10px;
+            font-size: clamp(10px, 2.5vw, 14px);
+            margin: 5px 0;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            flex-shrink: 0;
         }
     </style>
 </head>
@@ -142,10 +155,40 @@
         // Canvas 크기 설정
         function resizeCanvas() {
             const container = document.querySelector('.container');
-            const maxWidth = Math.min(500, window.innerWidth - 40);
-            const maxHeight = window.innerHeight - 300;
-            canvas.width = maxWidth;
-            canvas.height = Math.min(maxHeight, 600);
+            const h1 = document.querySelector('h1');
+            const scoreContainer = document.querySelector('.score-container');
+            const hint = document.querySelector('.hint');
+            
+            // 사용 가능한 높이 계산
+            const headerHeight = h1 ? h1.offsetHeight : 30;
+            const scoreHeight = scoreContainer ? scoreContainer.offsetHeight : 50;
+            const hintHeight = hint ? hint.offsetHeight : 30;
+            const padding = 20; // 상하 패딩
+            
+            const availableHeight = window.innerHeight - headerHeight - scoreHeight - hintHeight - padding;
+            const availableWidth = window.innerWidth - 20; // 좌우 패딩
+            
+            // 비율 유지하면서 사용 가능한 공간에 맞춤
+            const aspectRatio = 5 / 6; // 가로:세로 = 5:6
+            let canvasWidth = availableWidth;
+            let canvasHeight = canvasWidth / aspectRatio;
+            
+            if (canvasHeight > availableHeight) {
+                canvasHeight = availableHeight;
+                canvasWidth = canvasHeight * aspectRatio;
+            }
+            
+            canvas.width = Math.max(200, Math.floor(canvasWidth));
+            canvas.height = Math.max(300, Math.floor(canvasHeight));
+            
+            canvas.style.width = canvas.width + 'px';
+            canvas.style.height = canvas.height + 'px';
+            
+            // 비행기 위치 재조정
+            if (airplane) {
+                airplane.x = canvas.width / 2;
+                airplane.y = canvas.height - 80;
+            }
         }
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
@@ -217,14 +260,63 @@
             });
         }
         
-        // 충돌 감지
+        // 충돌 감지 - 비행기 삼각형과 장애물의 정확한 충돌 감지
         function checkCollision() {
             obstacles.forEach(obstacle => {
-                if (airplane.x < obstacle.x + obstacle.width &&
-                    airplane.x + airplane.width > obstacle.x &&
-                    airplane.y < obstacle.y + obstacle.height &&
-                    airplane.y + airplane.height > obstacle.y) {
-                    gameOver();
+                // 비행기 삼각형의 실제 충돌 영역 계산
+                // 삼각형: 상단 꼭짓점 (airplane.x, airplane.y)
+                // 좌측 하단: (airplane.x - 20, airplane.y + 40)
+                // 우측 하단: (airplane.x + 20, airplane.y + 40)
+                
+                // 비행기의 실제 충돌 박스 (삼각형을 감싸는 최소 사각형)
+                const airplaneLeft = airplane.x - 20;
+                const airplaneRight = airplane.x + 20;
+                const airplaneTop = airplane.y;
+                const airplaneBottom = airplane.y + 40;
+                
+                // AABB 충돌 감지 (먼저 박스 레벨에서 체크)
+                if (airplaneRight > obstacle.x &&
+                    airplaneLeft < obstacle.x + obstacle.width &&
+                    airplaneBottom > obstacle.y &&
+                    airplaneTop < obstacle.y + obstacle.height) {
+                    // 더 정확한 충돌 감지: 장애물의 각 모서리와 중심점이 삼각형 내부에 있는지 체크
+                    const obstaclePoints = [
+                        {x: obstacle.x, y: obstacle.y}, // 좌상단
+                        {x: obstacle.x + obstacle.width, y: obstacle.y}, // 우상단
+                        {x: obstacle.x, y: obstacle.y + obstacle.height}, // 좌하단
+                        {x: obstacle.x + obstacle.width, y: obstacle.y + obstacle.height}, // 우하단
+                        {x: obstacle.x + obstacle.width / 2, y: obstacle.y + obstacle.height / 2} // 중심
+                    ];
+                    
+                    for (const point of obstaclePoints) {
+                        // 점이 삼각형의 바운딩 박스 내부에 있는지 먼저 체크
+                        if (point.y >= airplaneTop &&
+                            point.y <= airplaneBottom &&
+                            point.x >= airplaneLeft &&
+                            point.x <= airplaneRight) {
+                            // 삼각형 내부인지 확인: y 위치에 따른 삼각형의 좌우 경계 계산
+                            // 삼각형은 위에서 아래로 갈수록 넓어짐
+                            // 상단 (y = airplaneTop): 폭 0 (점)
+                            // 하단 (y = airplaneBottom): 폭 40
+                            const relativeY = point.y - airplaneTop;
+                            if (relativeY <= 0) {
+                                // 상단 꼭짓점 근처 - 매우 작은 영역만 충돌
+                                if (Math.abs(point.x - airplane.x) < 5) {
+                                    gameOver();
+                                    return;
+                                }
+                            } else {
+                                const triangleWidthAtY = 40 * (relativeY / 40); // y가 증가할수록 삼각형 폭 증가
+                                const triangleLeftBound = airplane.x - triangleWidthAtY / 2;
+                                const triangleRightBound = airplane.x + triangleWidthAtY / 2;
+                                
+                                if (point.x >= triangleLeftBound && point.x <= triangleRightBound) {
+                                    gameOver();
+                                    return;
+                                }
+                            }
+                        }
+                    }
                 }
             });
         }
