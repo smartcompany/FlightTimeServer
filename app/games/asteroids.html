@@ -133,15 +133,20 @@
             canvas.height = 500;
         }
         resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
         
         const ship = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
+            x: 0,
+            y: 0,
             angle: 0,
             speed: 0,
             rotationSpeed: 0.1,
             maxSpeed: 5
         };
+        
+        // Canvas 크기 설정 후 ship 위치 초기화
+        ship.x = canvas.width / 2;
+        ship.y = canvas.height / 2;
         
         let bullets = [];
         let asteroids = [];
@@ -376,71 +381,155 @@
                 init();
                 return;
             }
+            // 발사 간격 제한
+            const now = Date.now();
+            if (shoot.lastTime && now - shoot.lastTime < 200) return;
+            shoot.lastTime = now;
+            
             bullets.push({
                 x: ship.x + Math.cos(ship.angle) * 15,
                 y: ship.y + Math.sin(ship.angle) * 15,
                 angle: ship.angle
             });
         }
+        shoot.lastTime = 0;
         
         function resetGame() {
+            document.getElementById('gameOver').classList.remove('show');
             init();
         }
         
         // Control buttons
         let rotatingLeft = false;
         let rotatingRight = false;
-        let accelerating = false;
+        let rotationInterval = null;
         
-        document.getElementById('rotateLeft').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            rotatingLeft = true;
-        });
-        document.getElementById('rotateLeft').addEventListener('touchend', (e) => {
-            e.preventDefault();
-            rotatingLeft = false;
-        });
-        document.getElementById('rotateLeft').addEventListener('mousedown', () => {
-            rotatingLeft = true;
-        });
-        document.getElementById('rotateLeft').addEventListener('mouseup', () => {
-            rotatingLeft = false;
-        });
-        
-        document.getElementById('rotateRight').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            rotatingRight = true;
-        });
-        document.getElementById('rotateRight').addEventListener('touchend', (e) => {
-            e.preventDefault();
-            rotatingRight = false;
-        });
-        document.getElementById('rotateRight').addEventListener('mousedown', () => {
-            rotatingRight = true;
-        });
-        document.getElementById('rotateRight').addEventListener('mouseup', () => {
-            rotatingRight = false;
-        });
-        
-        document.getElementById('shoot').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            shoot();
-        });
-        document.getElementById('shoot').addEventListener('click', () => {
-            shoot();
-        });
-        
-        // Rotation loop
-        setInterval(() => {
-            if (gameRunning) {
-                if (rotatingLeft) {
-                    ship.angle -= ship.rotationSpeed;
+        function startRotation() {
+            if (rotationInterval) return;
+            rotationInterval = setInterval(() => {
+                if (gameRunning) {
+                    if (rotatingLeft) {
+                        ship.angle -= ship.rotationSpeed;
+                    }
+                    if (rotatingRight) {
+                        ship.angle += ship.rotationSpeed;
+                    }
+                } else {
+                    if (rotationInterval) {
+                        clearInterval(rotationInterval);
+                        rotationInterval = null;
+                    }
                 }
-                if (rotatingRight) {
-                    ship.angle += ship.rotationSpeed;
-                }
+            }, 16);
+        }
+        
+        function stopRotation() {
+            if (rotationInterval) {
+                clearInterval(rotationInterval);
+                rotationInterval = null;
             }
-        }, 16);
+        }
+        
+        const rotateLeftBtn = document.getElementById('rotateLeft');
+        const rotateRightBtn = document.getElementById('rotateRight');
+        const shootBtn = document.getElementById('shoot');
+        
+        rotateLeftBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!gameRunning) {
+                init();
+            }
+            rotatingLeft = true;
+            startRotation();
+        }, { passive: false });
+        
+        rotateLeftBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            rotatingLeft = false;
+            if (!rotatingRight) {
+                stopRotation();
+            }
+        }, { passive: false });
+        
+        rotateLeftBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            if (!gameRunning) {
+                init();
+            }
+            rotatingLeft = true;
+            startRotation();
+        });
+        
+        rotateLeftBtn.addEventListener('mouseup', (e) => {
+            e.preventDefault();
+            rotatingLeft = false;
+            if (!rotatingRight) {
+                stopRotation();
+            }
+        });
+        
+        rotateLeftBtn.addEventListener('mouseleave', () => {
+            rotatingLeft = false;
+            if (!rotatingRight) {
+                stopRotation();
+            }
+        });
+        
+        rotateRightBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!gameRunning) {
+                init();
+            }
+            rotatingRight = true;
+            startRotation();
+        }, { passive: false });
+        
+        rotateRightBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            rotatingRight = false;
+            if (!rotatingLeft) {
+                stopRotation();
+            }
+        }, { passive: false });
+        
+        rotateRightBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            if (!gameRunning) {
+                init();
+            }
+            rotatingRight = true;
+            startRotation();
+        });
+        
+        rotateRightBtn.addEventListener('mouseup', (e) => {
+            e.preventDefault();
+            rotatingRight = false;
+            if (!rotatingLeft) {
+                stopRotation();
+            }
+        });
+        
+        rotateRightBtn.addEventListener('mouseleave', () => {
+            rotatingRight = false;
+            if (!rotatingLeft) {
+                stopRotation();
+            }
+        });
+        
+        shootBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            shoot();
+        }, { passive: false });
+        
+        shootBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            shoot();
+        });
         
         // Keyboard controls
         document.addEventListener('keydown', (e) => {
@@ -462,10 +551,39 @@
         });
         
         // Initial screen
-        ctx.fillStyle = '#fff';
-        ctx.font = '24px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('Tap Fire to Start', canvas.width / 2, canvas.height / 2);
+        function drawStartScreen() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Stars
+            ctx.fillStyle = '#fff';
+            for (let i = 0; i < 50; i++) {
+                const x = (i * 37) % canvas.width;
+                const y = (i * 23 + Date.now() / 20) % canvas.height;
+                ctx.fillRect(x, y, 1, 1);
+            }
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = '24px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Tap Fire to Start', canvas.width / 2, canvas.height / 2);
+        }
+        
+        drawStartScreen();
+        
+        // Canvas 클릭으로도 시작 가능
+        canvas.addEventListener('click', () => {
+            if (!gameRunning) {
+                init();
+            }
+        });
+        
+        canvas.addEventListener('touchstart', (e) => {
+            if (!gameRunning) {
+                e.preventDefault();
+                init();
+            }
+        }, { passive: false });
     </script>
 </body>
 </html>

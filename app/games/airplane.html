@@ -300,19 +300,36 @@
         // 터치 이벤트 - 드래그 추적
         let isDragging = false;
         let activeTouchId = null;
+        let lastTouchX = 0;
+        
+        function updateAirplanePosition(clientX) {
+            if (!gameRunning) return;
+            const rect = canvas.getBoundingClientRect();
+            const touchX = clientX - rect.left;
+            airplane.x = Math.max(20, Math.min(canvas.width - 20, touchX - airplane.width / 2));
+        }
         
         function handleTouchMove(e) {
-            if (!isDragging || !gameRunning || activeTouchId === null) return;
+            if (!isDragging || !gameRunning) return;
             
             e.preventDefault();
             e.stopPropagation();
+            e.stopImmediatePropagation();
             
-            const touch = Array.from(e.touches).find(t => t.identifier === activeTouchId);
-            if (!touch) return;
+            // activeTouchId가 있으면 해당 터치 찾기, 없으면 첫 번째 터치 사용
+            let touch = null;
+            if (activeTouchId !== null) {
+                touch = Array.from(e.touches).find(t => t.identifier === activeTouchId);
+            }
+            if (!touch && e.touches.length > 0) {
+                touch = e.touches[0];
+                activeTouchId = touch.identifier;
+            }
             
-            const rect = canvas.getBoundingClientRect();
-            const touchX = touch.clientX - rect.left;
-            airplane.x = Math.max(20, Math.min(canvas.width - 20, touchX - airplane.width / 2));
+            if (touch) {
+                lastTouchX = touch.clientX;
+                updateAirplanePosition(touch.clientX);
+            }
         }
         
         function handleTouchEnd(e) {
@@ -322,6 +339,18 @@
             if (touch) {
                 isDragging = false;
                 activeTouchId = null;
+                lastTouchX = 0;
+            }
+        }
+        
+        function handleTouchCancel(e) {
+            if (activeTouchId !== null) {
+                const touch = Array.from(e.changedTouches).find(t => t.identifier === activeTouchId);
+                if (touch) {
+                    isDragging = false;
+                    activeTouchId = null;
+                    lastTouchX = 0;
+                }
             }
         }
         
@@ -335,21 +364,29 @@
             if (e.touches.length > 0) {
                 isDragging = true;
                 activeTouchId = e.touches[0].identifier;
-                const rect = canvas.getBoundingClientRect();
-                const touchX = e.touches[0].clientX - rect.left;
-                airplane.x = Math.max(20, Math.min(canvas.width - 20, touchX - airplane.width / 2));
+                lastTouchX = e.touches[0].clientX;
+                updateAirplanePosition(e.touches[0].clientX);
             }
         }, { passive: false });
         
-        // canvas와 document 모두에 touchmove 등록
-        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-        document.addEventListener('touchmove', handleTouchMove, { passive: false });
+        // 모든 레벨에서 touchmove 캡처 (capture phase에서 먼저 처리)
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false, capture: true });
+        document.addEventListener('touchmove', handleTouchMove, { passive: false, capture: true });
+        if (document.body) {
+            document.body.addEventListener('touchmove', handleTouchMove, { passive: false, capture: true });
+        }
         
         canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
         document.addEventListener('touchend', handleTouchEnd, { passive: false });
+        if (document.body) {
+            document.body.addEventListener('touchend', handleTouchEnd, { passive: false });
+        }
         
-        canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
-        document.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+        canvas.addEventListener('touchcancel', handleTouchCancel, { passive: false });
+        document.addEventListener('touchcancel', handleTouchCancel, { passive: false });
+        if (document.body) {
+            document.body.addEventListener('touchcancel', handleTouchCancel, { passive: false });
+        }
         
         // 키보드 이벤트 (데스크톱용)
         document.addEventListener('keydown', (e) => {
